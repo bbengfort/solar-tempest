@@ -20,6 +20,7 @@ import gzip
 import numpy as np
 
 from datetime import datetime
+from .utils import memoized
 
 # RE to parse a data file basename
 DNAME = re.compile(r'([a-z]+)(\d+)vsec\.sec\.gz', re.I)
@@ -48,41 +49,36 @@ class DataFile(object):
 
         self.path = path
         self._file = None
-        self._fields = None
-        self._meta = None
-        self._nrecords = None
 
-    @property
+    @memoized
     def fields(self):
         """
         Searches for the field names as the last row in the header but
         modifies the field information according to our dtype modifications.
         """
-        if self._fields is None:
-            fields = list(self.header())[-1].rstrip("|").strip().split()
+        fields = list(self.header())[-1].rstrip("|").strip().split()
 
-            # NOTE: we're manually modifying the dtype of DATE TIME and DOY.
-            # This may not be general for all IAGA formats.
-            self._fields = ["DATETIME", "DOY"] + fields[3:]
-        return self._fields
+        # NOTE: we're manually modifying the dtype of DATE TIME and DOY.
+        # This may not be general for all IAGA formats.
+        return ["DATETIME", "DOY"] + fields[3:]
 
-    @property
+    @memoized
     def meta(self):
         """
         Searches for key/value meta data from the header.
         """
-        if self._meta is None:
-            self._meta = {}
+        meta = {}
 
-            # Ignore last line as we presume that is the field names
-            for line in list(self.header())[:-1]:
-                line = line.rstrip("|").strip() # Remove extra characters
-                if line.startswith("#"): continue # Ignore comments
+        # Ignore last line as we presume that is the field names
+        for line in list(self.header())[:-1]:
+            line = line.rstrip("|").strip() # Remove extra characters
+            if line.startswith("#"): continue # Ignore comments
 
-                # Hopefully the keys and values are sep by more than 2 spaces ...
-                line = line.split("  ")
-                self._meta[line[0]] = " ".join(line[1:]).strip()
-        return self._meta
+            # Hopefully the keys and values are sep by more than 2 spaces ...
+            line = line.split("  ")
+            meta[line[0]] = " ".join(line[1:]).strip()
+
+        return meta
 
     @property
     def name(self):
@@ -91,6 +87,17 @@ class DataFile(object):
         """
         name, _ = os.path.splitext(os.path.basename(self.path))
         return name
+
+    @memoized
+    def nrecords(self):
+        """
+        Count the number of records in the data file (also returned by len)
+        """
+        self.ready() # check if we're ready
+        return sum(
+            1 for line in self._file
+            if line.strip() and not line.endswith("|") and not line.startswith("#")
+        )
 
     def header(self):
         """
@@ -130,7 +137,7 @@ class DataFile(object):
         """
         Open the data file and read in the lines.
         """
-        with gzip.open(path, 'rb') as f:
+        with gzip.open(self.path, 'rb') as f:
             self._file = f.read().decode('utf8').split("\n")
 
     def close(self):
@@ -151,13 +158,7 @@ class DataFile(object):
             yield row
 
     def __len__(self):
-        if self._nrecords is None:
-            self.ready() # check if we're ready
-            self._nrecords = sum(
-                1 for line in self._file
-                if line.strip() and not line.endswith("|") and not line.startswith("#")
-            )
-        return self._nrecords
+        return self.nrecords
 
     def __enter__(self):
         self.open()
@@ -190,6 +191,7 @@ class DataPath(str):
     def splitext(self):
         return os.path.splitext(self)
 
+    @memoized
     def parse(self):
         match = DNAME.match(self.basename)
         if match is None:
@@ -198,11 +200,11 @@ class DataPath(str):
 
     @property
     def observatory(self):
-        return self.parse()[0].upper()
+        return self.parse[0].upper()
 
     @property
     def date(self):
-        return datetime.strptime(self.parse()[1], "%Y%m%d").date()
+        return datetime.strptime(self.parse[1], "%Y%m%d").date()
 
 
 if __name__ == '__main__':

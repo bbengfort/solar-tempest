@@ -29,5 +29,17 @@ The `GlobalData` utility manages the data directory as a whole, opening data fil
 from iaga import GlobalData
 
 data = GlobalData("fixtures/sample")
+
+# Show the observatories (directories) being managed
 print(data.observatories)
+
+# Print the field names describing the record
+print(data.fields)
+
+# Loop over all joined records, which are numpy arrays
+# Note that the records rows should be ordered by timestamp
+# The record columns should be HDZF records for each observatory, ordered
+# by the observatory name (alphabetically)
+for record in data:
+    # Do something with record
 ```
