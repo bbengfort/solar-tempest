@@ -43,3 +43,11 @@ print(data.fields)
 for record in data:
     # Do something with record
 ```
+
+## Benchmark
+
+This implementation is _memory efficient_, though unfortunately not time efficient. The memory performance for a global read of 14 observatories worth of data is as follows:
+
+![Memory Performance](fixtures/memory_benchmark.png)
+
+As you can see, the memory usage never really goes above 250MB and drops as each file is opened and closed. 
