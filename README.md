@@ -4,7 +4,7 @@
 
 This package contains sample USGS data in `fixtures/sample`, organized as compressed IAGA 2002 data files in `<OBSERVATORY>/OneSecond/` directories. This data structure can be read with the utilities in the `iaga` package, particularly the `DataFile` and `GlobalData` objects.
 
-You can use the `DataFile` object to read a single compressed IAGA 2002 data file without decompressing the file to disk as follows:
+You can use the `DataFile` object to read a single compressed [IAGA 2002](https://www.ngdc.noaa.gov/IAGA/vdat/IAGA2002/iaga2002format.html) data file without decompressing the file to disk as follows:
 
 ```python
 import json
@@ -50,4 +50,4 @@ This implementation is _memory efficient_, though unfortunately not time efficie
 
 ![Memory Performance](fixtures/memory_benchmark.png)
 
-As you can see, the memory usage never really goes above 250MB and drops as each file is opened and closed. 
+As you can see, the memory usage never really goes above 250MB and drops as each file is opened and closed.
